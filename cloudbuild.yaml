@@ -1,0 +1,40 @@
+steps:
+
+# 1️⃣ Build Docker image
+- name: gcr.io/cloud-builders/docker
+  args:
+    [
+      "build",
+      "-t",
+      "us-central1-docker.pkg.dev/recareai-dev/recare/calling-service-dev:$SHORT_SHA",
+      "."
+    ]
+
+# 2️⃣ Push image
+- name: gcr.io/cloud-builders/docker
+  args:
+    [
+      "push",
+      "us-central1-docker.pkg.dev/recareai-dev/recare/calling-service-dev:$SHORT_SHA"
+    ]
+
+# 3️⃣ Deploy to Cloud Run
+- name: gcr.io/google.com/cloudsdktool/cloud-sdk
+  entrypoint: gcloud
+  args:
+    [
+      "run","deploy","calling-service-dev",
+      "--image=us-central1-docker.pkg.dev/recareai-dev/recare/calling-service-dev:$SHORT_SHA",
+      "--region=us-central1",
+      "--platform=managed",
+      "--allow-unauthenticated",
+      "--service-account=recare-enrichment-dev-sa@recareai-dev.iam.gserviceaccount.com",
+      "--add-cloudsql-instances=recareai-dev:us-central1:recare-mapping-pg15-dev",
+      "--vpc-connector=recare-vpc-connector",
+      "--vpc-egress=private-ranges-only",
+      "--set-env-vars=INSTANCE_CONNECTION_NAME=recareai-dev:us-central1:recare-mapping-pg15-dev,DB_USER=calling_app_user,DB_NAME=recare_mapping",
+      "--set-secrets=DB_PASSWORD=CALLING_DB_PASSWORD:latest"
+    ]
+
+images:
+- us-central1-docker.pkg.dev/recareai-dev/recare/calling-service-dev:$SHORT_SHA
