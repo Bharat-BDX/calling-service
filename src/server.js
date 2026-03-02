@@ -12,12 +12,12 @@ app.use(express.json());
 app.use('/scheduler', tenantMiddleware, schedulerRoutes);
 app.use('/eligibility', tenantMiddleware, eligibilityRoutes);
 app.use('/webhooks', webhookRoutes);
-app.get('/health', (req, res) => res.send('OK'));
+app.get('/health', (req, res) => res.send('OK '));
 
 app.get('/db-health', async (req, res) => {
   try {
     const r = await pool.query('SELECT 1');
-    res.json({ ok: true });
+    res.json({ ok: true, message: 'DB connection OK' });
   } catch (e) {
     console.error("DB_CONNECTION_ERROR", e);
     res.status(500).json({ ok: false, error: e.message });
