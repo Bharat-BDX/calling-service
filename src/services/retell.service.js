@@ -43,19 +43,37 @@ async function executeBatchCall() {
         /* ---------- BUILD PAYLOAD ---------- */
         // const { validItems, invalidCount } = await buildBatchPayload(attempts);
         const validItems = [
+            // {
+            //     "to_number":"+918982364625",
+            //     "metadata": { 
+            //         "patient_name":"Satyam Gour",
+            //         "surrogate_person_id":"8bb5d855-e896-4a24-8798-3fb54b89a203",
+            //         "correlation_id":"69d4e516-e418-4a53-9fc2-cb028f7c1596",
+            //         "tenant_id": "demo-tenant"
+            //     }
+            // },
+            // {
+            //     "to_number":"+917000109067",
+            //     "metadata": { 
+            //         "patient_name":"Bharat Namdev",
+            //         "surrogate_person_id":"9cc5d855-e896-4a24-8798-3fb54b89a302",
+            //         "correlation_id":"77e4e516-e418-4a53-9fc2-cb028f7c2697",
+            //         "tenant_id": "demo-tenant"
+            //     }
+            // }
             {
-                "to_number":"+918982364625",
+                "to_number":"+917869979679",
                 "metadata": { 
-                    "patient_name":"Satyam Gour",
+                    "patient_name":"Arvind Patidar",
                     "surrogate_person_id":"8bb5d855-e896-4a24-8798-3fb54b89a203",
                     "correlation_id":"69d4e516-e418-4a53-9fc2-cb028f7c1596",
                     "tenant_id": "demo-tenant"
                 }
             },
             {
-                "to_number":"+917000109067",
+                "to_number":"+16122805916",
                 "metadata": { 
-                    "patient_name":"Bharat Namdev",
+                    "patient_name":"Kevin Dunn",
                     "surrogate_person_id":"9cc5d855-e896-4a24-8798-3fb54b89a302",
                     "correlation_id":"77e4e516-e418-4a53-9fc2-cb028f7c2697",
                     "tenant_id": "demo-tenant"
