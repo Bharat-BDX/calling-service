@@ -102,13 +102,14 @@ async function finalizeAttemptAndUpdateState(payload) {
         return;
       }
 
-      console.log('SCRUBBED_CALL_ANALYSIS', JSON.stringify(payload.call.scrubbed_call_analysis));
-      const checkCallSuccess = payload.call?.scrubbed_call_analysis?.call_successful;
-      const callStatus = checkCallSuccess ? 'success' : 'failure';
+      // console.log('SCRUBBED_CALL_ANALYSIS', JSON.stringify(payload.call.duration_ms));
+      const checkCallSuccess = payload.call?.duration_ms > 0 ? 'success' : 'failure';
+      console.log("CHECK_CALL_SUCCESS", checkCallSuccess);
+    
       // Update state
       let nextEligible = new Date();
       console.log("CURRENT_DATETIME", nextEligible);
-      let intervalHours = checkCallSuccess ? 72 : 24;
+      let intervalHours = checkCallSuccess == 'success' ? 72 : 24;
       console.log("INTERVAL_HOURS", intervalHours);
       nextEligible.setHours(nextEligible.getHours() + intervalHours);
       console.log("NEXT_ELIGIBLE", nextEligible);
@@ -131,7 +132,7 @@ async function finalizeAttemptAndUpdateState(payload) {
             END
         WHERE surrogate_person_id = $3
         `,
-        [outcome_status, nextEligible, surrogate_person_id, callStatus]
+        [outcome_status, nextEligible, surrogate_person_id, checkCallSuccess]
       );
       console.log('STATE_UPDATE_RESPONSE', JSON.stringify(stateUpdateRes));
       await client.query('COMMIT');
