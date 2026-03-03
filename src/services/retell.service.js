@@ -30,7 +30,7 @@ const retellClient = new Retell({
 
 async function executeBatchCall() {
     const attempts = DUMMY_BATCH_DATA;
-    console.log("BATCH_CALL_INITIATE", JSON.stringify(attempts));
+    // console.log("BATCH_CALL_INITIATE", JSON.stringify(attempts));
     
     // if (!Array.isArray(attempts) || attempts.length === 0) {
     //     return {

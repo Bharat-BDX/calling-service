@@ -94,12 +94,10 @@ async function initiateCall(candidate, tenantId) {
         recare_call_token,
         surrogate_person_id,
         phone_hash,
-        agent_id,
-        agent_version,
         initiated_at,
         outcome_status
       )
-      VALUES ($1,$2,$3,$4,$5,'default-agent','v1',now(),'initiated')
+      VALUES ($1,$2,$3,$4,$5,now(),'initiated')
       RETURNING call_attempt_id
     `, [
       callAttemptId,
