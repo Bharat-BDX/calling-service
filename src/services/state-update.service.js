@@ -49,6 +49,8 @@ async function finalizeAttemptAndUpdateState(payload) {
       agent_id,
       agent_version
     } = payload.call;
+    const tenantId = payload.call?.scrubbed_metadata?.tenant_id || 'demo-tenant';
+    console.log("UPDATE_STATE_TENANT_ID", tenantId);
 
     const formattedStarted_at = await timestampToIsoUtcMicro(started_at);
     console.log("FORMATTED_STARTED_AT", formattedStarted_at);
@@ -57,6 +59,12 @@ async function finalizeAttemptAndUpdateState(payload) {
 
     await client.query('BEGIN');
 
+    // Set tenant context
+    await client.query(
+      "SELECT set_config('app.current_tenant', $1, true)",
+      [tenantId]
+    );
+
     if (payload.event === "call_analyzed") {
       // Update call_attempt
       const updateOnCallEnd = [
@@ -64,6 +72,11 @@ async function finalizeAttemptAndUpdateState(payload) {
       ];
     
       console.log('CALL_ANALYSING', JSON.stringify(updateOnCallEnd));
+
+      const tenantCheck = await client.query(
+        "SELECT current_setting('app.current_tenant', true)"
+      );
+      console.log("DB_TENANT_CONTEXT", tenantCheck.rows);
 
       const updateRes = await client.query(
         `
@@ -78,7 +91,6 @@ async function finalizeAttemptAndUpdateState(payload) {
             outcome_reason = $7,
             batch_call_id = $8
           WHERE recare_call_token = $9 AND surrogate_person_id = $10
-          RETURNING call_attempt_id
         `,
         updateOnCallEnd
       );
@@ -95,10 +107,9 @@ async function finalizeAttemptAndUpdateState(payload) {
       await client.query('COMMIT');
 
     } else if (payload.event === "call_ended") {
-      console.log('ON call_ended EVENT WE ARE NOT UPDATING ANYTHING...');
+      console.log('CALL_ENDED_EVENT');
     }else {
-      console.log('skipping event', payload.event);
-      
+      console.log('SKIPPING_EVENT', payload.event);
     }
 
     // // Update call_attempt

@@ -20,6 +20,10 @@ router.post('/retell', async (req, res) => {
             'key_042baf5bb48a6fedc4f39a789d34',
             req.headers["x-retell-signature"]
         );
+
+        console.log('RETELL_WEBHOOK_SECRET', process.env.RETELL_WEBHOOK_SECRET);
+        console.log('RAW_BODY', req.rawBody);
+
         console.log('VERIFY_RETELL_SIGNATURE_RESPONSE', verifyRetellSignatureRes);
     
         if (!verifyRetellSignatureRes) {
