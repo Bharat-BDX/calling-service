@@ -33,7 +33,7 @@ async function finalizeAttemptAndUpdateState(payload) {
   const client = await pool.connect();
 
   try {
-    console.log('STATE_UPDATE', JSON.stringify(payload));
+    console.log('STATE_UPDATE_PAYLOD', JSON.stringify(payload));
 
     const {
       scrubbed_metadata: {
@@ -103,41 +103,43 @@ async function finalizeAttemptAndUpdateState(payload) {
       }
 
       console.log('SCRUBBED_CALL_ANALYSIS', JSON.stringify(payload.call.scrubbed_call_analysis));
-
+      const checkCallSuccess = payload.call?.scrubbed_call_analysis?.call_successful;
+      const callStatus = checkCallSuccess ? 'success' : 'failure';
+      // Update state
+      let nextEligible = new Date();
+      console.log("CURRENT_DATETIME", nextEligible);
+      let intervalHours = checkCallSuccess ? 72 : 24;
+      console.log("INTERVAL_HOURS", intervalHours);
+      nextEligible.setHours(nextEligible.getHours() + intervalHours);
+      console.log("NEXT_ELIGIBLE", nextEligible);
+      
+      const stateUpdateRes = await client.query(
+        `
+        UPDATE app.call_state_person
+        SET
+          last_ended_at = now(),
+          last_outcome = $1,
+          next_eligible_at = $2,
+          fail_count =
+            CASE WHEN $4 = 'success' THEN 0
+                ELSE fail_count + 1
+            END,
+          unreachable =
+            CASE WHEN fail_count + 1 >= 4 AND $4 != 'success'
+                THEN true
+                ELSE false
+            END
+        WHERE surrogate_person_id = $3
+        `,
+        [outcome_status, nextEligible, surrogate_person_id, callStatus]
+      );
+      console.log('STATE_UPDATE_RESPONSE', JSON.stringify(stateUpdateRes));
+      await client.query('COMMIT');
     } else if (payload.event === "call_ended") {
       console.log('CALL_ENDED_EVENT');
     }else {
       console.log('SKIPPING_EVENT', payload.event);
     }
-
-    // Update state
-    let nextEligible = new Date();
-    let intervalHours = outcome_status === 'success' ? 72 : 24;
-
-    nextEligible.setHours(nextEligible.getHours() + intervalHours);
-
-    await client.query(
-      `
-      UPDATE app.call_state_person
-      SET
-        last_ended_at = now(),
-        last_outcome = $1,
-        next_eligible_at = $2,
-        fail_count =
-          CASE WHEN $1 = 'success' THEN 0
-               ELSE fail_count + 1
-          END,
-        unreachable =
-          CASE WHEN fail_count + 1 >= 4 AND $1 != 'success'
-               THEN true
-               ELSE false
-          END
-      WHERE surrogate_person_id = $3
-      `,
-      [outcome_status, nextEligible, surrogate_person_id]
-    );
-
-    await client.query('COMMIT');
 
   } catch (err) {
     await client.query('ROLLBACK');
