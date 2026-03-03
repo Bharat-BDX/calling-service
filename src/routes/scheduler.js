@@ -30,10 +30,10 @@ router.post('/run', async (req, res) => {
 
     for (let c of candidates.attemptBatchPayload.tasks) {
 
-      // if (initiated.length >= maxBatchSize) {
-      //   console.log('MAX_BATCH_REACHED');
-      //   break;
-      // } 
+      if (initiated.length >= maxBatchSize) {
+        console.log('MAX_BATCH_REACHED');
+        break;
+      } 
 
       const result = await initiateCall(c, tenantId);
       if (result) initiated.push(result);
