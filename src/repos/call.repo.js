@@ -36,10 +36,10 @@ async function initiateCall(candidate, tenantId, timezone = 'America/New_York') 
       `
       SELECT *
       FROM app.calling_windows
-      WHERE tenant_id::text = current_setting('app.current_tenant', true)
+      WHERE tenant_id = current_setting('app.current_tenant', true)
         AND timezone = $1
         AND now()::time BETWEEN start_time AND end_time
-        AND extract(dow from now())::int = ANY(allowed_days)
+        AND extract(dow from now())::int = ANY(allowed_days::int[])
       LIMIT 1
       `,
       [timezone]
@@ -70,7 +70,7 @@ async function initiateCall(candidate, tenantId, timezone = 'America/New_York') 
         MAX(ended_at) FILTER (WHERE outcome_status = 'ended') AS last_success
       FROM app.call_attempts
       WHERE phone_hash = $1
-        AND tenant_id = current_setting('app.current_tenant', true)::text
+        AND tenant_id = current_setting('app.current_tenant', true)
     `, [phone_hash]);
     console.log("COOLDOWN_RESULT", JSON.stringify(cooldownRes.rows));
     
