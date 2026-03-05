@@ -36,7 +36,7 @@ async function initiateCall(candidate, tenantId, timezone = 'America/New_York') 
       `
       SELECT *
       FROM app.calling_windows
-      WHERE tenant_id = current_setting('app.current_tenant', true)::text
+      WHERE tenant_id::text = current_setting('app.current_tenant', true)
         AND timezone = $1
         AND now()::time BETWEEN start_time AND end_time
         AND extract(dow from now())::int = ANY(allowed_days)
