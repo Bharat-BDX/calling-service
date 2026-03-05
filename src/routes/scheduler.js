@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { executeBatchCall } = require('../services/retell.service');
-// const { getEligibleCandidates } = require('../services/eligibility.service');
+const { getEligibleCandidates } = require('../services/eligibility.service');
 const { initiateCall } = require('../repos/call.repo');
 
 router.post('/run', async (req, res) => {
@@ -13,7 +13,7 @@ router.post('/run', async (req, res) => {
   if (!timezone) return res.status(400).json({ error: 'timezone required' });
 
   const candidates = await getEligibleCandidates(timezone, tenantId);
-  // console.log("candidates", candidates);
+  console.log("CANDIDATES", candidates);
   const initiated = [];
 
   // const candidates = await executeBatchCall();

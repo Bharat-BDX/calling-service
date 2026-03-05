@@ -72,9 +72,9 @@ async function getEligibleCandidates(timezone, tenantId) {
             }
         },
         {
-            "to_number":"+917869979679",
+            "to_number":"+918982364625",
             "metadata": { 
-                "patient_name":"Arvind Patidar",
+                "patient_name":"Satyam gour",
                 "surrogate_person_id":"8bb5d855-e896-4a24-8798-3fb54b89a203"
             }
         }
