@@ -17,11 +17,10 @@ async function initiateCall(candidate, tenantId) {
     );
 
     const { metadata, to_number } = candidate;
-    const { surrogate_person_id, correlation_id: token} = metadata;
-    const rawPhone = to_number; // TODO: inject from vendor
-    console.log('RAW_PHONE', rawPhone);
+    const { surrogate_person_id} = metadata;
+    console.log('RAW_PHONE', to_number);
     
-    const phone_hash = rawPhone ? normalizeAndHashPhone(rawPhone) : null;
+    const phone_hash = to_number ? normalizeAndHashPhone(to_number) : null;
     console.log('PHONE_HASH', phone_hash);
     
     if (!phone_hash) {
@@ -29,16 +28,41 @@ async function initiateCall(candidate, tenantId) {
       return null; // Never call blank phone
     }
 
-    // PHONE-LEVEL ATOMIC LOCK
+    /**
+     * STEP 1 — Validate calling window
+     */
+
+    const windowRes = await client.query(
+      `
+      SELECT *
+      FROM app.calling_windows
+      WHERE tenant_id = current_setting('app.current_tenant', true)
+        AND timezone = $1
+        AND now()::time BETWEEN start_time AND end_time
+        AND extract(dow from now()) = ANY(allowed_days)
+      LIMIT 1
+      `,
+      [timezone]
+    );
+
+    if (windowRes.rowCount === 0) {
+      console.log("OUTSIDE_CALLING_WINDOW");
+      await client.query('ROLLBACK');
+      return null;
+    }
+
+    /**
+     * STEP 2 — PHONE LEVEL LOCK
+     */
+
     await client.query(
       `SELECT pg_advisory_xact_lock(hashtext($1))`,
       [phone_hash]
     );
 
-    // -------------------------
-    // COOLDOWN CALCULATION
-    // -------------------------
-
+    /**
+     * STEP 3 — cooldown calculation
+     */
     const cooldownRes = await client.query(`
       SELECT
         MAX(initiated_at) FILTER (WHERE outcome_status IS NULL) AS last_initiated,
@@ -48,11 +72,14 @@ async function initiateCall(candidate, tenantId) {
         AND tenant_id = current_setting('app.current_tenant', true)
     `, [phone_hash]);
 
-    const stateRes = await client.query(`
+    const stateRes = await client.query(
+      `
       SELECT next_eligible_at
       FROM app.call_state_person
       WHERE surrogate_person_id = $1
-    `, [surrogate_person_id]);
+      `,
+      [surrogate_person_id]
+    );
 
     const now = new Date();
 
@@ -84,14 +111,13 @@ async function initiateCall(candidate, tenantId) {
       return null; // Abort safely
     }
 
-    // -------------------------
-    // SAFE INSERT
-    // -------------------------
-
+    /**
+     * STEP 4 — create call attempt
+     */
     const callAttemptId = uuidv4();
-    // const token = uuidv4();
+    const token = uuidv4();
 
-    const insertRes = await client.query(`
+    await client.query(`
       INSERT INTO app.call_attempts (
         call_attempt_id,
         tenant_id,
@@ -112,10 +138,9 @@ async function initiateCall(candidate, tenantId) {
     ]);
 
     await client.query('COMMIT');
-
-    // return insertRes.rows[0];
-    return { call_attempt_id: callAttemptId };
-
+    candidate.metadata.tenant_id = tenantId
+    candidate.metadata.correlation_id = token;
+    return candidate;
   } catch (err) {
     await client.query('ROLLBACK');
     console.error('atomic_initiate_failed', err.message);

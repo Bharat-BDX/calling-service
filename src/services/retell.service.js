@@ -28,8 +28,8 @@ const retellClient = new Retell({
    MAIN FUNCTION (ENTRY POINT)
 ===================================================== */
 
-async function executeBatchCall() {
-    const attempts = DUMMY_BATCH_DATA;
+async function executeBatchCall(validItems) {
+    // const attempts = DUMMY_BATCH_DATA;
     // console.log("BATCH_CALL_INITIATE", JSON.stringify(attempts));
     
     // if (!Array.isArray(attempts) || attempts.length === 0) {
@@ -42,44 +42,44 @@ async function executeBatchCall() {
     try {
         /* ---------- BUILD PAYLOAD ---------- */
         // const { validItems, invalidCount } = await buildBatchPayload(attempts);
-        const validItems = [
-            // {
-            //     "to_number":"+918982364625",
-            //     "metadata": { 
-            //         "patient_name":"Satyam Gour",
-            //         "surrogate_person_id":"8bb5d855-e896-4a24-8798-3fb54b89a203",
-            //         "correlation_id":"69d4e516-e418-4a53-9fc2-cb028f7c1596",
-            //         "tenant_id": "demo-tenant"
-            //     }
-            // },
-            {
-                "to_number":"+917000109067",
-                "metadata": { 
-                    "patient_name":"Bharat Namdev",
-                    "surrogate_person_id":"9cc5d855-e896-4a24-8798-3fb54b89a302",
-                    "correlation_id":"77e4e516-e418-4a53-9fc2-cb028f7c2697",
-                    "tenant_id": "demo-tenant"
-                }
-            },
-            {
-                "to_number":"+917869979679",
-                "metadata": { 
-                    "patient_name":"Arvind Patidar",
-                    "surrogate_person_id":"8bb5d855-e896-4a24-8798-3fb54b89a203",
-                    "correlation_id":"69d4e516-e418-4a53-9fc2-cb028f7c1596",
-                    "tenant_id": "demo-tenant"
-                }
-            }
-            // {
-            //     "to_number":"+16122805916",
-            //     "metadata": { 
-            //         "patient_name":"Kevin Dunn",
-            //         "surrogate_person_id":"9cc5d855-e896-4a24-8798-3fb54b89a302",
-            //         "correlation_id":"77e4e516-e418-4a53-9fc2-cb028f7c2697",
-            //         "tenant_id": "demo-tenant"
-            //     }
-            // }
-        ];
+        // const validItems = [
+        //     // {
+        //     //     "to_number":"+918982364625",
+        //     //     "metadata": { 
+        //     //         "patient_name":"Satyam Gour",
+        //     //         "surrogate_person_id":"8bb5d855-e896-4a24-8798-3fb54b89a203",
+        //     //         "correlation_id":"69d4e516-e418-4a53-9fc2-cb028f7c1596",
+        //     //         "tenant_id": "demo-tenant"
+        //     //     }
+        //     // },
+        //     {
+        //         "to_number":"+917000109067",
+        //         "metadata": { 
+        //             "patient_name":"Bharat Namdev",
+        //             "surrogate_person_id":"9cc5d855-e896-4a24-8798-3fb54b89a302",
+        //             "correlation_id":"77e4e516-e418-4a53-9fc2-cb028f7c2697",
+        //             "tenant_id": "demo-tenant"
+        //         }
+        //     },
+        //     {
+        //         "to_number":"+917869979679",
+        //         "metadata": { 
+        //             "patient_name":"Arvind Patidar",
+        //             "surrogate_person_id":"8bb5d855-e896-4a24-8798-3fb54b89a203",
+        //             "correlation_id":"69d4e516-e418-4a53-9fc2-cb028f7c1596",
+        //             "tenant_id": "demo-tenant"
+        //         }
+        //     }
+        //     // {
+        //     //     "to_number":"+16122805916",
+        //     //     "metadata": { 
+        //     //         "patient_name":"Kevin Dunn",
+        //     //         "surrogate_person_id":"9cc5d855-e896-4a24-8798-3fb54b89a302",
+        //     //         "correlation_id":"77e4e516-e418-4a53-9fc2-cb028f7c2697",
+        //     //         "tenant_id": "demo-tenant"
+        //     //     }
+        //     // }
+        // ];
 
         // for (const attempt of attempts) {
         //     const recareCallToken = crypto.randomUUID();

@@ -12,38 +12,41 @@ router.post('/run', async (req, res) => {
   console.log("tenantId", tenantId);
   if (!timezone) return res.status(400).json({ error: 'timezone required' });
 
-  // const candidates = await getEligibleCandidates(timezone, tenantId);
+  const candidates = await getEligibleCandidates(timezone, tenantId);
   // console.log("candidates", candidates);
   const initiated = [];
 
-  /**
-     * Need to implement Retell vendor here
-     */
-    const candidates = await executeBatchCall();
-    console.log("CANDIDATE_RESULT", JSON.stringify(candidates));
-    if (!candidates.success) {
-      res.json({
-        success: false,
-        message: candidates.message
-      })
-    }
-
-    for (let c of candidates.attemptBatchPayload.tasks) {
-
-      if (initiated.length >= maxBatchSize) {
-        console.log('MAX_BATCH_REACHED');
-        break;
-      } 
-
-      const result = await initiateCall(c, tenantId);
-      if (result) initiated.push(result);
-    }
-
+  // const candidates = await executeBatchCall();
+  // console.log("CANDIDATE_RESULT", JSON.stringify(candidates));
+  // if (!candidates.success) {
+  if (candidates.length == 0) {
     res.json({
-      success: true,
-      timezone,
-      initiated: initiated.length
-    });
+      success: false,
+      message: candidates?.message || 'No valid candidates found!'
+    })
+  }
+
+  // for (let c of candidates.attemptBatchPayload.tasks) {
+  for (let c of candidates) {
+
+    if (initiated.length >= maxBatchSize) {
+      console.log('MAX_BATCH_REACHED');
+      break;
+    } 
+
+    const result = await initiateCall(c, tenantId);
+    if (result) initiated.push(result);
+  }
+
+  if (initiated.length > 0) {
+    await executeBatchCall(initiated);
+  }
+
+  res.json({
+    success: true,
+    timezone,
+    initiated: initiated.length
+  });
 });
 
 module.exports = router;

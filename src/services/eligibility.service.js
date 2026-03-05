@@ -3,171 +3,89 @@ const pool = require('../db');
 
 async function getEligibleCandidates(timezone, tenantId) {
 
-  const client = await pool.connect();
+  // const client = await pool.connect();
 
   try {
     console.log('GET_ELIGIBILITY', tenantId, timezone);
+
+    // // force BEGIN so SET LOCAL actually applies
     // await client.query('BEGIN');
-    // Set tenant context (RLS)
     // await client.query(
-    //   "SET LOCAL app.current_tenant = $1",
+    //   "SELECT set_config('app.current_tenant', $1, true)",
     //   [tenantId]
     // );
 
-    // force BEGIN so SET LOCAL actually applies
-    await client.query('BEGIN');
-    await client.query(
-      "SELECT set_config('app.current_tenant', $1, true)",
-      [tenantId]
-    );
-    // await client.query(
-    //   `SET LOCAL app.current_tenant = '${tenantId.replace(/'/g, "''")}'`
+    // // Validate calling window
+    // const windowRes = await client.query(
+    //   `
+    //   SELECT *
+    //   FROM app.calling_windows
+    //   WHERE tenant_id = current_setting('app.current_tenant', true)
+    //     AND timezone = $1
+    //     AND now()::time BETWEEN start_time AND end_time
+    //     AND extract(dow from now()) = ANY(allowed_days)
+    //   LIMIT 1
+    //   `,
+    //   [timezone]
     // );
-
-    // PROVE what PostgreSQL sees
-    // const tenantCheck = await client.query(
-    //   "SELECT current_setting('app.current_tenant', true) AS tenant"
-    // );
-    // console.log('DB_CURRENT_TENANT', tenantCheck.rows[0].tenant);
     
-    const windowResult = await client.query( // Need to remove, using for testing purpose
-      `
-      SELECT tenant_id
-      FROM app.calling_windows
-      WHERE timezone = $1
-      `,
-      [timezone]
-    );
-    console.log('RAW_CALLING_WINDOWS', windowResult.rows);
-
-    // ✅ calling_windows MUST include tenant
-    const windowRes = await client.query(
-      `
-      SELECT 1
-      FROM app.calling_windows
-      WHERE timezone = $1
-        AND tenant_id = current_setting('app.current_tenant', true)
-        AND now()::time BETWEEN start_time AND end_time
-      LIMIT 1
-      `,
-      [timezone]
-    );
-    
-    console.log('calling_windows_rows', windowRes.rows);
-    console.log('calling_windows_count', windowRes.rows.length, windowRes.rowCount);
-    if (windowRes.rows.length === 0) {
-      return [];
-    }
-
-    // 2️⃣ Load patients in timezone
-    // const patients = await client.query(`
-    //   SELECT p.id, p.phone, p.do_not_call, p.calling_opt_in,
-    //          cs.next_eligible_at, cs.unreachable
-    //   FROM app.patient p
-    //   LEFT JOIN app.call_state_person cs
-    //     ON cs.surrogate_person_id = p.id
-    //   WHERE p.timezone = $1
-    // `, [timezone]);
-
-    // const now = new Date();
-    // const eligible = [];
-
-    // for (let p of patients.rows) {
-
-    //   if (p.do_not_call) continue;
-    //   if (!p.calling_opt_in) continue;
-    //   if (p.unreachable) continue;
-
-    //   const phoneHash = normalizeAndHashPhone(p.phone);
-    //   if (!phoneHash) continue;
-
-    //   if (p.next_eligible_at && now < p.next_eligible_at) continue;
-
-    //   eligible.push({
-    //     surrogate_person_id: p.id,
-    //     phone_hash: phoneHash
-    //   });
+    // console.log('calling_windows_count', windowRes?.rows.length, windowRes.rowCount);
+    // if (windowRes.rowCount === 0) {
+    //   return [];
     // }
 
-    // return eligible;
-
-    // const res = await client.query(`
-    //   SELECT p.patient_id AS surrogate_person_id, p.timezone,
-    //          cs.next_eligible_at, cs.unreachable
-    //   FROM app.patient p
-    //   LEFT JOIN app.call_state_person cs
-    //     ON cs.surrogate_person_id = p.patient_id
-    //   WHERE p.timezone = $1
-    //     AND p.calling_opt_in = true
-    //     AND p.do_not_call = false 
-    // `, [timezone]);
-
-    // ✅ patient query already RLS-safe
+    // /**
+    //  * 
+    //  * - only opted-in
+    //  * - not do_not_call
+    //  * - reachable
+    //  * - next_eligible_at satisfied
+    //  */
     // const res = await client.query(
     //   `
     //   SELECT
-    //     p.patient_id AS surrogate_person_id
+    //   p.patient_id AS surrogate_person_id,
     //   FROM app.patient p
     //   LEFT JOIN app.call_state_person cs
     //     ON cs.surrogate_person_id = p.patient_id
     //   WHERE p.timezone = $1
+    //     AND p.tenant_id = $2
     //     AND p.calling_opt_in = true
     //     AND p.do_not_call = false
     //     AND (cs.unreachable IS NULL OR cs.unreachable = false)
     //     AND (cs.next_eligible_at IS NULL OR cs.next_eligible_at <= now())
     //   `,
-    //   [timezone]
+    //   [timezone, tenantId]
     // );
 
-    // const checkTenant = await client.query(
-    //   "SELECT current_setting('app.current_tenant', true) AS tenant"
-    // );
-    // console.log('DB_TENANT_BEFORE', checkTenant.rows[0].tenant);
-    // const res = await client.query(
-    //   `
-    //   SELECT p.patient_id AS surrogate_person_id
-    //   FROM app.patient p
-    //   WHERE p.timezone = $1
-    //     AND p.calling_opt_in = true
-    //     AND p.do_not_call = false
-    //   `,
-    //   [timezone]
-    // );
+    // await client.query('COMMIT');
+    // console.log('PATIEN_LIST', JSON.stringify(res.rows));
+    
+    // return res.rows;
 
-    /**
-     * 
-     * - only opted-in
-     * - not do_not_call
-     * - reachable
-     * - next_eligible_at satisfied
-     */
-    const res = await client.query(
-      `
-      SELECT
-        p.patient_id AS surrogate_person_id
-      FROM app.patient p
-      LEFT JOIN app.call_state_person cs
-        ON cs.surrogate_person_id = p.patient_id
-      WHERE p.timezone = $1
-        AND p.calling_opt_in = true
-        AND p.do_not_call = false
-        AND (cs.unreachable IS NULL OR cs.unreachable = false)
-        AND (cs.next_eligible_at IS NULL OR cs.next_eligible_at <= now())
-      `,
-      [timezone]
-    );
-    await client.query('COMMIT');
-    console.log('patients', res.rows);
-    const check_Tenant = await client.query(
-      "SELECT current_setting('app.current_tenant', true) AS tenant"
-    );
-    console.log('DB_TENANT_AFTER', check_Tenant.rows[0].tenant);
-    return res.rows;
+    const validItems = [
+        {
+            "to_number":"+917000109067",
+            "metadata": { 
+                "patient_name":"Bharat Namdev",
+                "surrogate_person_id":"9cc5d855-e896-4a24-8798-3fb54b89a302"
+            }
+        },
+        {
+            "to_number":"+917869979679",
+            "metadata": { 
+                "patient_name":"Arvind Patidar",
+                "surrogate_person_id":"8bb5d855-e896-4a24-8798-3fb54b89a203"
+            }
+        }
+    ];
+
+    return validItems;
   } catch (e) {
-    await client.query('ROLLBACK');
+    // await client.query('ROLLBACK');
     throw e;
   } finally {
-    client.release();
+    // client.release();
   }
 }
 
