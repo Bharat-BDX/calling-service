@@ -44,7 +44,8 @@ async function initiateCall(candidate, tenantId, timezone = 'America/New_York') 
       `,
       [timezone]
     );
-
+    console.log("WINDOWS_RAW_COUNT", windowRes.rowCount);
+    
     if (windowRes.rowCount === 0) {
       console.log("OUTSIDE_CALLING_WINDOW");
       await client.query('ROLLBACK');
@@ -71,7 +72,8 @@ async function initiateCall(candidate, tenantId, timezone = 'America/New_York') 
       WHERE phone_hash = $1
         AND tenant_id = current_setting('app.current_tenant', true)
     `, [phone_hash]);
-
+    console.log("COOLDOWN_RESULT", JSON.stringify(cooldownRes.rows));
+    
     const stateRes = await client.query(
       `
       SELECT next_eligible_at
@@ -80,7 +82,8 @@ async function initiateCall(candidate, tenantId, timezone = 'America/New_York') 
       `,
       [surrogate_person_id]
     );
-
+    console.log("STATE_RESULT", JSON.stringify(stateRes.rows));
+    
     const now = new Date();
 
     const lastInitiated = cooldownRes.rows[0].last_initiated;
@@ -88,24 +91,27 @@ async function initiateCall(candidate, tenantId, timezone = 'America/New_York') 
     const nextEligible = stateRes.rows[0]?.next_eligible_at;
 
     let cooldownUntil = null;
-
+    console.log('LAST_INITIATED', lastInitiated);
+    
     if (lastInitiated) {
       const d = new Date(lastInitiated);
       d.setHours(d.getHours() + 24);
       cooldownUntil = d;
     }
-
+    console.log('LAST_SUCCESS', lastSuccess);
+    
     if (lastSuccess) {
       const d = new Date(lastSuccess);
       d.setHours(d.getHours() + 72);
       if (!cooldownUntil || d > cooldownUntil) cooldownUntil = d;
     }
 
+    console.log('NEXT_ELIGIBLEcooldownUntil', nextEligible);
     if (nextEligible) {
       const d = new Date(nextEligible);
       if (!cooldownUntil || d > cooldownUntil) cooldownUntil = d;
     }
-
+    console.log('COOLDOWN_UNTIL', cooldownUntil);
     if (cooldownUntil && now < cooldownUntil) {
       await client.query('ROLLBACK');
       return null; // Abort safely
@@ -138,7 +144,7 @@ async function initiateCall(candidate, tenantId, timezone = 'America/New_York') 
     ]);
 
     await client.query('COMMIT');
-    candidate.metadata.tenant_id = tenantId
+    candidate.metadata.tenant_id = tenantId;
     candidate.metadata.correlation_id = token;
     return candidate;
   } catch (err) {
