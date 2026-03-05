@@ -2,7 +2,7 @@ const pool = require('../db');
 const { v4: uuidv4 } = require('uuid');
 const { normalizeAndHashPhone } = require('../utils/phone.util');
 
-async function initiateCall(candidate, tenantId) {
+async function initiateCall(candidate, tenantId, timezone = 'America/New_York') {
   console.log("CALL_INITIATE", JSON.stringify(candidate));
   
   const client = await pool.connect();

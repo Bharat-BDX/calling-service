@@ -13,7 +13,7 @@ router.post('/run', async (req, res) => {
   if (!timezone) return res.status(400).json({ error: 'timezone required' });
 
   const candidates = await getEligibleCandidates(timezone, tenantId);
-  console.log("CANDIDATES", candidates);
+  console.log("CANDIDATES", JSON.stringify(candidates));
   const initiated = [];
 
   // const candidates = await executeBatchCall();
@@ -34,10 +34,12 @@ router.post('/run', async (req, res) => {
       break;
     } 
 
-    const result = await initiateCall(c, tenantId);
+    const result = await initiateCall(c, tenantId, timezone);
     if (result) initiated.push(result);
   }
 
+  console.log("INITIATED", JSON.stringify(initiated));
+  
   if (initiated.length > 0) {
     await executeBatchCall(initiated);
   }
